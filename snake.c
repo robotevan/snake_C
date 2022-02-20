@@ -29,7 +29,7 @@ void add_snake_block(snake_t *snake, int x, int y){
 }
 
 void remove_snake_tail(snake_t *snake){
-    struct snake_block *old_tail = snake->tail->prev_block;
+    struct snake_block *old_tail = snake->tail;
     snake->tail = old_tail->prev_block;
     snake->tail->next_block = NULL;
     free(old_tail);
@@ -38,20 +38,24 @@ void remove_snake_tail(snake_t *snake){
 void move_snake(snake_t *snake, direction_t direction){
     int curr_x = snake->head->x;
     int curr_y = snake->head->y;
-
     switch (direction) {
     case UP:
+        add_snake_block(snake, curr_x, curr_y - 1);
         break;
     
     case RIGHT:
+        add_snake_block(snake, curr_x + 1, curr_y);
         break;
     
     case DOWN:
+        add_snake_block(snake, curr_x, curr_y + 1);
         break;
 
     case LEFT:
+        add_snake_block(snake, curr_x - 1, curr_y);
         break;
     }
+    remove_snake_tail(snake);    
 }
 
 int is_snake_block(snake_t *snake, int x, int y){

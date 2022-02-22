@@ -83,7 +83,7 @@ void print_game_frame(snake_game_t *game){
                 printf("#\n");
             }else if (x == 0){
                 printf("#");
-            }else if (is_snake_block(&game->snake, x, y) && y != 0 && y!=game->height-1){
+            }else if (is_snake_block(&game->snake, x, y)){
                 printf("o");
             }else if (game->current_snack.x == x && game->current_snack.y == y){
                 printf("@");
@@ -97,18 +97,41 @@ void print_game_frame(snake_game_t *game){
     printf("score: %d\n", game->score);
 }
 
-void update_game(snake_game_t *game){
-    move_snake(&game->snake, game->current_direction);
-    if(is_snake_at_point_block(game)){
-        struct snake_block *prev_tail = game->snake.tail;
-        move_snake(&game->snake, game->current_direction);
-        game->snake.tail->next_block = prev_tail;
-        prev_tail->prev_block = game->snake.tail;
+void move_snake(snake_game_t *game){
+    // get current coords of head
+    int curr_x = game->snake.head->x;
+    int curr_y = game->snake.head->y;
+    switch (game->current_direction) {
+    case UP:
+        add_snake_block(&game->snake, curr_x, curr_y - 1);
+        break;
+    
+    case RIGHT:
+        add_snake_block(&game->snake, curr_x + 1, curr_y);
+        break;
+    
+    case DOWN:
+        add_snake_block(&game->snake, curr_x, curr_y + 1);
+        break;
+
+    case LEFT:
+        add_snake_block(&game->snake, curr_x - 1, curr_y);
+        break;
     }
+    // leave tail if snake ate point
+    if(!is_snake_at_point_block(game)){
+        remove_snake_tail(&game->snake);
+    }else{
+        game->score++;
+    }
+}
+
+void update_game(snake_game_t *game){
+    move_snake(game);
     is_snake_dead(game);
 }
 
-void *read_intput(void *game){
+void *read_input(void *game){
     snake_game_t *g = (snake_game_t *)game;
     while(g->current_game_state == RUNNING){
         //printf("Getting input\n");  
@@ -137,11 +160,13 @@ int main(){
     // create the game
     snake_game_t game; 
     create_game(&game, WIDTH, HEIGHT);
+    game.current_snack.y=HEIGHT/2;
+    game.current_snack.x = WIDTH/2 + 5;
     // create the input listener
     pthread_t input_thread;
     //TODO : DEFINITELEY RACE CONDITION!
-    pthread_create(&input_thread, NULL, read_intput, (void *)&game);
-    pthread_detach(&input_thread);
+    //pthread_create(&input_thread, NULL, read_input, (void *)&game);
+    //pthread_detach(input_thread);
     while(game.current_game_state == RUNNING){
         print_game_frame(&game);
         update_game(&game);

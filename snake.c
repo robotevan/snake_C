@@ -9,54 +9,40 @@ void create_snake(snake_t *snake, int start_x, int start_y){
     add_snake_block(snake, start_x, start_y);
 }
 
+struct snake_block *create_snake_block(int x, int y){
+    struct snake_block *block = (struct snake_block *)malloc(sizeof(struct snake_block ));
+    block->x = x;
+    block->y = y;
+    return block;
+}
 
 void add_snake_block(snake_t *snake, int x, int y){
-    struct snake_block *new_head = (struct snake_block *)malloc(sizeof(struct snake_block));
+    struct snake_block *new_head = create_snake_block(x, y);
     new_head->prev_block = NULL;
-    new_head->x = x;
-    new_head->y = y;
-    // is empty?
-    if(snake->head == NULL){
-        snake->head = new_head;
-        snake->head->next_block = NULL; 
-        snake->tail = snake->head; // size 1
-    }else {
-        struct snake_block *old_head = snake->head;
-        snake->head = new_head;
-        snake->head->next_block = new_head;
-        old_head->prev_block = new_head;
+    if(snake->head == NULL){ // if empty
+        snake->tail = new_head;
+    }else if(snake->head == snake->tail) {
+        snake->tail = snake->head;
+        snake->tail->prev_block = snake->head;
     }
+    new_head->next_block = snake->head;
+    snake->head = new_head;
 }
 
 void remove_snake_tail(snake_t *snake){
-    struct snake_block *old_tail = snake->tail;
-    snake->tail = old_tail->prev_block;
-    snake->tail->next_block = NULL;
-    free(old_tail);
-}
-
-void move_snake(snake_t *snake, direction_t direction){
-    int curr_x = snake->head->x;
-    int curr_y = snake->head->y;
-    switch (direction) {
-    case UP:
-        add_snake_block(snake, curr_x, curr_y - 1);
-        break;
-    
-    case RIGHT:
-        add_snake_block(snake, curr_x + 1, curr_y);
-        break;
-    
-    case DOWN:
-        add_snake_block(snake, curr_x, curr_y + 1);
-        break;
-
-    case LEFT:
-        add_snake_block(snake, curr_x - 1, curr_y);
-        break;
+    if(snake->head == NULL || snake->tail == NULL){ // size == 0
+        return;
+    }else if(snake->head == snake->tail){ // size == 1
+        free(snake->head);
+        snake->head == NULL;
+        snake->tail == NULL;
+    }else { // any other case
+        snake->tail = snake->tail->prev_block;
+        free(snake->tail->next_block);
+        snake->tail->next_block = NULL;
     }
-    remove_snake_tail(snake);    
 }
+
 
 int is_snake_block(snake_t *snake, int x, int y){
     struct snake_block *tmp = snake->head;
@@ -69,3 +55,11 @@ int is_snake_block(snake_t *snake, int x, int y){
     return 0;
 }
 
+void print_snake(snake_t *snake){
+    struct snake_block *tmp = snake->head;
+    while(tmp->next_block != NULL){
+        printf("[%d, %d]->", tmp->x, tmp->y);
+        tmp = tmp->next_block;
+    }
+    printf("\n");
+}

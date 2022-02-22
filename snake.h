@@ -21,9 +21,10 @@ typedef struct snake {
 } snake_t;
 
 void create_snake(snake_t *snake, int start_x, int start_y);
+struct snake_block *create_snake_block(int x, int y);
 void add_snake_block(snake_t *snake, int x, int y);
 void remove_snake_tail(snake_t *snake);
-void move_snake(snake_t *snake, direction_t direction);
 int is_snake_block(snake_t *snake, int x, int y);
+void print_snake(snake_t *snake);
 
 #endif

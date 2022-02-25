@@ -65,11 +65,11 @@ typedef struct snake_game {
 void new_snake_point_pos(snake_game_t *game){
     int rand_x, rand_y;
     do{
-        rand_x = (rand()+1) % (max_width-2);
-        rand_y = (rand()+1) % (max_width-2);
+        rand_x = (rand()+1) % (game->width-2);
+        rand_y = (rand()+1) % (game->height-2);
     }while(is_snake_block(&game->snake, rand_x, rand_y));
-    game->current_snack->x = rand_x;
-    game->current_snack->y = rand_y;
+    game->current_snack.x = rand_x;
+    game->current_snack.y = rand_y;
 }
 
 /*
@@ -115,7 +115,7 @@ void create_game(snake_game_t *game, int width, int height){
     game->score = 0;
     srand(time(NULL));
     create_snake(&game->snake, width/2, height/2);
-    new_snake_point_pos(&game->current_snack, &game->snake, width, height);
+    new_snake_point_pos(game);
 }
 
 /*
@@ -187,7 +187,7 @@ void move_snake(snake_game_t *game){
     if(!is_snake_at_point_block(game)){
         remove_snake_tail(&game->snake);
     }else{ // if at point, leave tail (grow) and increment score
-        new_snake_point_pos(&game->current_snack, &game->snake, game->width, game->height);
+        new_snake_point_pos(game);
         game->score+=10;
     }
 }

@@ -19,16 +19,35 @@
 #define HEIGHT 15
 #define WIDTH HEIGHT *2
 
+
+/*
+ * States for the snake game
+ */
 typedef enum game_state{
     RUNNING,
     GAME_OVER,
 } game_state_t;
 
+/*
+ * snake point block
+ * x : x coordinate from left to right
+ * y : y coordinate from top to bottom
+ */
 typedef struct snake_point{
     int x;
     int y;
 } snake_point_t;
 
+/*
+ * Holds the current content for the game
+ * width : of board in characters, (#)
+ * height : of board in characters (#)
+ * score : of current game
+ * snake : double linked list of snake_block_t
+ * current_game_state : RUNNING / GAME_OVER
+ * current_direction : UP / DOWN / LEFT / RIGHT
+ * current snack : coords to current snack on board
+ */
 typedef struct snake_game {
     int width;
     int height;
@@ -39,21 +58,33 @@ typedef struct snake_game {
     snake_point_t current_snack;
 } snake_game_t;
 
-void new_snake_point_pos(snake_point_t *point, snake_t *snake, int max_width, int max_height){
+/*
+ * Create a new snack/point at a random location
+ * @param game : reference to current game
+ */
+void new_snake_point_pos(snake_game_t *game){
     int rand_x, rand_y;
     do{
         rand_x = (rand()+1) % (max_width-2);
         rand_y = (rand()+1) % (max_width-2);
-    }while(is_snake_block(snake, rand_x, rand_y));
-    point->x = rand_x;
-    point->y = rand_y;
+    }while(is_snake_block(&game->snake, rand_x, rand_y));
+    game->current_snack->x = rand_x;
+    game->current_snack->y = rand_y;
 }
 
+/*
+ * check if snake head is at same coords as point block
+ * @param reference to current game
+ */
 int is_snake_at_point_block(snake_game_t *game){
     return (game->current_snack.x == game->snake.head->x &&
                 game->current_snack.y == game->snake.head->y);
 }
 
+/*
+ * Check if snake has collided with any walls/itself
+ * @param reference to current game
+ */
 void is_snake_dead(snake_game_t *game){
     snake_t *s = &game->snake;
     if(s->head->x == 0 || s->head->x == game->width - 1){
@@ -70,6 +101,12 @@ void is_snake_dead(snake_game_t *game){
     }
 }
 
+/*
+ * populate a game struct
+ * @param reference to new game struct
+ * @param width of new game
+ * @param height of new game
+ */
 void create_game(snake_game_t *game, int width, int height){
     game->width = width;
     game->height = height;
@@ -81,8 +118,13 @@ void create_game(snake_game_t *game, int width, int height){
     new_snake_point_pos(&game->current_snack, &game->snake, width, height);
 }
 
+/*
+ * print the contents of the current game including snake,
+ * boarders, snack and score
+ * @param reference to current game
+ */
 void print_game_frame(snake_game_t *game){
-    clrscr();
+    clrscr(); // TODO : NOT WORKING
     // print top of frame
     for (int y = 0; y < game->height; y++){
         for (int x = 0; x < game->width; x++){
@@ -104,6 +146,22 @@ void print_game_frame(snake_game_t *game){
     printf("score: %d\n", game->score);
 }
 
+/*
+ * Update the snakes current direction, prevent from turning 180deg
+ * @param reference to current game
+ * @param new desired direction
+ */
+void set_snake_directtion(snake_game_t *game, direction_t new_direction){
+    //TODO : Mutex lock! Will be accessed from control thread
+    if(new_direction != game->current_direction){
+        game->current_direction = new_direction;
+    }
+}
+
+/*
+ * move snake by 1 position depending on direction
+ * @param reference to current game
+ */
 void move_snake(snake_game_t *game){
     // get current coords of head
     int curr_x = game->snake.head->x;
@@ -125,20 +183,28 @@ void move_snake(snake_game_t *game){
         add_snake_block(&game->snake, curr_x - 1, curr_y);
         break;
     }
-    // leave tail if snake ate point
+    // remove tail to simulate moving
     if(!is_snake_at_point_block(game)){
         remove_snake_tail(&game->snake);
-    }else{
+    }else{ // if at point, leave tail (grow) and increment score
         new_snake_point_pos(&game->current_snack, &game->snake, game->width, game->height);
-        game->score++;
+        game->score+=10;
     }
 }
 
+/*
+ * Call every frame to update the game, including move,
+ * check if alive, check if point.....
+ * @param reference to current game
+ */
 void update_game(snake_game_t *game){
     move_snake(game);
     is_snake_dead(game);
 }
 
+/*
+ * seperate thread to read user inputs
+ */
 void *read_input(void *game){
     snake_game_t *g = (snake_game_t *)game;
     while(g->current_game_state == RUNNING){

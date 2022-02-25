@@ -61,6 +61,13 @@ void is_snake_dead(snake_game_t *game){
     }else if(s->head->y == 0 || s->head->y == game->height - 1){
         game->current_game_state = GAME_OVER;
     }
+    // final case, if snake hits itself, check if head hits any other
+    snake_t tmp_snake;
+    tmp_snake.head = s->head->next_block; // skip head
+    tmp_snake.tail = s->tail;
+    if(is_snake_block(&tmp_snake, s->head->x, s->head->y)){
+        game->current_game_state = GAME_OVER;
+    }
 }
 
 void create_game(snake_game_t *game, int width, int height){
@@ -70,8 +77,8 @@ void create_game(snake_game_t *game, int width, int height){
     game->current_direction = RIGHT;
     game->score = 0;
     srand(time(NULL));
-    new_snake_point_pos(&game->current_snack, &game->snake, width, height);
     create_snake(&game->snake, width/2, height/2);
+    new_snake_point_pos(&game->current_snack, &game->snake, width, height);
 }
 
 void print_game_frame(snake_game_t *game){
@@ -122,6 +129,7 @@ void move_snake(snake_game_t *game){
     if(!is_snake_at_point_block(game)){
         remove_snake_tail(&game->snake);
     }else{
+        new_snake_point_pos(&game->current_snack, &game->snake, game->width, game->height);
         game->score++;
     }
 }
@@ -134,7 +142,7 @@ void update_game(snake_game_t *game){
 void *read_input(void *game){
     snake_game_t *g = (snake_game_t *)game;
     while(g->current_game_state == RUNNING){
-        //printf("Getting input\n");  
+        printf("Getting input\n");  
         char in_btn = getchar();
         switch (in_btn) {
         case UP_CHAR:
@@ -153,20 +161,17 @@ void *read_input(void *game){
             g->current_game_state = GAME_OVER;
         }
     }
-    printf("DONE!\n");
 }
 
 int main(){
     // create the game
     snake_game_t game; 
     create_game(&game, WIDTH, HEIGHT);
-    game.current_snack.y=HEIGHT/2;
-    game.current_snack.x = WIDTH/2 + 5;
     // create the input listener
     pthread_t input_thread;
     //TODO : DEFINITELEY RACE CONDITION!
-    //pthread_create(&input_thread, NULL, read_input, (void *)&game);
-    //pthread_detach(input_thread);
+    pthread_create(&input_thread, NULL, read_input, (void *)&game);
+    pthread_detach(input_thread);
     while(game.current_game_state == RUNNING){
         print_game_frame(&game);
         update_game(&game);

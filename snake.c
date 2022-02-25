@@ -23,7 +23,9 @@ void add_snake_block(snake_t *snake, int x, int y){
         snake->tail = new_head;
     }else if(snake->head == snake->tail) {
         snake->tail = snake->head;
-        snake->tail->prev_block = snake->head;
+        snake->tail->prev_block = new_head;
+    }else{
+        snake->head->prev_block = new_head;
     }
     new_head->next_block = snake->head;
     snake->head = new_head;

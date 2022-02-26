@@ -3,10 +3,11 @@
 #include "snake.h"
 #include <unistd.h>
 #include "pthread.h"
+#include "termios.h"
 
 // screen
 #define clrscr() printf("\e[1;1H\e[2J")
-#define REFRESH_MS 350
+#define REFRESH_MS 500
 #define REFRESH_PERIOD_US REFRESH_MS * 1000
 
 // input
@@ -14,7 +15,7 @@
 #define RIGHT_CHAR 'd'
 #define DOWN_CHAR  's'
 #define LEFT_CHAR  'a'
-#define QUIT_CHAR  'q'
+#define QUIT_ESC_CHAR  27
 
 #define HEIGHT 15
 #define WIDTH HEIGHT *2
@@ -118,6 +119,15 @@ void create_game(snake_game_t *game, int width, int height){
     new_snake_point_pos(game);
 }
 
+void init_input_listener(){
+    struct termios info;
+    tcgetattr(0, &info);          // populate struct with current info
+    info.c_lflag &= ~ICANON;      // disable canonical mode
+    info.c_cc[VMIN] = 1;          // listen for 1 keystroke
+    info.c_cc[VTIME] = 0;         // no timeouit, prevent blocking
+    tcsetattr(0, TCSANOW, &info); // set new config
+}
+
 /*
  * print the contents of the current game including snake,
  * boarders, snack and score
@@ -206,24 +216,28 @@ void update_game(snake_game_t *game){
  * seperate thread to read user inputs
  */
 void *read_input(void *game){
+    init_input_listener(); // setup input
     snake_game_t *g = (snake_game_t *)game;
-    while(g->current_game_state == RUNNING){
-        printf("Getting input\n");  
-        char in_btn = getchar();
-        switch (in_btn) {
+    int ch;
+    while((ch = getchar()) != QUIT_ESC_CHAR && g->current_game_state == RUNNING){
+        if (ch < 0){
+            perror("Failed to read stdin");
+            exit(EXIT_FAILURE);
+        }
+        switch (ch) {
         case UP_CHAR:
-            g->current_direction = UP;
+            set_snake_directtion(g, UP);
             break;
         case RIGHT_CHAR:
-            g->current_direction = RIGHT;
+            set_snake_directtion(g, RIGHT);
             break;
         case DOWN_CHAR:
-            g->current_direction = DOWN;
+            set_snake_directtion(g, DOWN);
             break;
         case LEFT_CHAR:
-            g->current_direction = UP;
+            set_snake_directtion(g, LEFT);
             break;
-        case QUIT_CHAR:
+        case QUIT_ESC_CHAR:
             g->current_game_state = GAME_OVER;
         }
     }

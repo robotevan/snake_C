@@ -40,6 +40,16 @@ typedef struct snake_point{
 } snake_point_t;
 
 /*
+ * Hold opposite directions, used when setting new dir
+ */
+direction_t opposite_direction[] = {
+    DOWN,
+    LEFT,
+    UP,
+    RIGHT,
+};
+
+/*
  * Holds the current content for the game
  * width : of board in characters, (#)
  * height : of board in characters (#)
@@ -163,7 +173,8 @@ void print_game_frame(snake_game_t *game){
  */
 void set_snake_directtion(snake_game_t *game, direction_t new_direction){
     //TODO : Mutex lock! Will be accessed from control thread
-    if(new_direction != game->current_direction){
+    // make sure snake doesnt pull a 180!
+    if(new_direction != opposite_direction[game->current_direction]){
         game->current_direction = new_direction;
     }
 }
